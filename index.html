@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario Portable</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .portable-badge {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            background-color: #27ae60;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .controls {
+            padding: 20px;
+            background-color: #ecf0f1;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .controls input, .controls select, .controls button {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .controls button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .controls button:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: #27ae60 !important;
+        }
+
+        .btn-success:hover {
+            background-color: #229954 !important;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c !important;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b !important;
+        }
+
+        .btn-warning {
+            background-color: #f39c12 !important;
+        }
+
+        .btn-warning:hover {
+            background-color: #e67e22 !important;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th {
+            background-color: #34495e;
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #2c3e50;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            text-align: center;
+            background-color: white;
+        }
+
+        .section-header {
+            background-color: #95a5a6;
+            color: white;
+            font-weight: bold;
+        }
+
+        .inventory-section {
+            background-color: #a8cdf0;
+        }
+
+        .sales-section {
+            background-color: #f8b7b7;
+        }
+
+        .entries-section {
+            background-color: #b7f8b7;
+        }
+
+        .profit-section {
+            background-color: #fff2b7;
+        }
+
+        tr:nth-child(even) td {
+            background-color: #f8f9fa;
+        }
+
+        tr:hover td {
+            background-color: #e8f4f8;
+        }
+
+        .editable {
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .editable:focus {
+            background-color: #fff;
+            border: 1px solid #3498db;
+            outline: none;
+        }
+
+        .profit-positive {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .profit-negative {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .delete-btn {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 10px;
+        }
+
+        .delete-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .summary {
+            padding: 20px;
+            background-color: #ecf0f1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .summary-card {
+            background-color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .summary-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+        }
+
+        .modal-content h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .status-bar {
+            background-color: #34495e;
+            color: white;
+            padding: 10px 20px;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auto-save-indicator {
+            color: #27ae60;
+            font-weight: bold;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .offline-indicator {
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+
+        .online-indicator {
+            background-color: #27ae60;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="portable-badge">📱 PORTABLE</div>
+            <h1>SISTEMA DE INVENTARIO PORTABLE</h1>
+            <p>Con Auto-Guardado y Respaldo Completo</p>
+        </div>
+
+        <div class="controls">
+            <button onclick="openModal('product')" class="btn-success">➕ Agregar Producto</button>
+            <button onclick="openModal('sale')" class="btn-danger">🛒 Registrar Venta</button>
+            <button onclick="openModal('entry')">📦 Registrar Entrada</button>
+            <button onclick="exportToPDF()" class="btn-warning">📄 Exportar PDF</button>
+            <button onclick="exportCompleteData()" class="btn-success">💾 Exportar Datos</button>
+            <button onclick="document.getElementById('importFile').click()" class="btn-warning">📤 Importar Datos</button>
+            <button onclick="clearAllData()" class="btn-danger">🗑️ Limpiar Todo</button>
+            <input type="text" id="searchInput" placeholder="🔍 Buscar producto..." onkeyup="filterProducts()">
+            <input type="file" id="importFile" class="file-input" accept=".json" onchange="importData(this)">
+        </div>
+
+        <div class="table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th rowspan="2" class="inventory-section">CÓDIGO<br>PRODUCTO</th>
+                        <th rowspan="2" class="inventory-section">DESCRIPCIÓN</th>
+                        <th rowspan="2" class="inventory-section">EXISTENCIAS<br>INICIALES</th>
+                        <th rowspan="2" class="inventory-section">ENTRADAS</th>
+                        <th rowspan="2" class="inventory-section">SALIDAS</th>
+                        <th rowspan="2" class="inventory-section">STOCK<br>ACTUAL</th>
+                        <th rowspan="2" class="profit-section">PRECIO<br>BASE ($)</th>
+                        <th rowspan="2" class="profit-section">PRECIO<br>VENTA ($)</th>
+                        <th rowspan="2" class="profit-section">GANANCIA<br>UNITARIA ($)</th>
+                        <th rowspan="2" class="profit-section">GANANCIA<br>TOTAL ($)</th>
+                        <th colspan="3" class="sales-section">ÚLTIMA VENTA</th>
+                        <th colspan="3" class="entries-section">ÚLTIMA ENTRADA</th>
+                        <th rowspan="2" class="inventory-section">ACCIONES</th>
+                    </tr>
+                    <tr>
+                        <th class="sales-section">CANTIDAD</th>
+                        <th class="sales-section">FECHA</th>
+                        <th class="sales-section">N° FACTURA</th>
+                        <th class="entries-section">CANTIDAD</th>
+                        <th class="entries-section">FECHA</th>
+                        <th class="entries-section">N° FACTURA</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                    <!-- Los datos se cargarán aquí dinámicamente -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="summary">
+            <div class="summary-card">
+                <h3>Total Productos</h3>
+                <div class="value" id="totalProducts">0</div>
+            </div>
+            <div class="summary-card">
+                <h3>Valor Total Inventario</h3>
+                <div class="value" id="totalInventoryValue">$0</div>
+            </div>
+            <div class="summary-card">
+                <h3>Ganancia Total</h3>
+                <div class="value" id="totalProfit">$0</div>
+            </div>
+            <div class="summary-card">
+                <h3>Productos Bajo Stock</h3>
+                <div class="value" id="lowStock">0</div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                <span class="auto-save-indicator" id="saveStatus">💾 Auto-guardado activo</span>
+                <span id="lastSaved"></span>
+            </div>
+            <div>
+                <span id="connectionStatus" class="online-indicator">🌐 Sistema Portable</span>
+                <span>Versión: 2.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modales (mismo código anterior) -->
+    <div id="productModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('product')">&times;</span>
+            <h3>Agregar Producto</h3>
+            <form id="productForm">
+                <div class="form-group">
+                    <label>Código del Producto:</label>
+                    <input type="text" id="productCode" required>
+                </div>
+                <div class="form-group">
+                    <label>Descripción:</label>
+                    <input type="text" id="productDescription" required>
+                </div>
+                <div class="form-group">
+                    <label>Stock Inicial:</label>
+                    <input type="number" id="initialStock" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Precio Base (Costo):</label>
+                    <input type="number" id="basePrice" step="0.01" min="0" required>
+                </div>
+                <div class="form-group">
+                    <label>Precio de Venta:</label>
+                    <input type="number" id="salePrice" step="0.01" min="0" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeModal('product')">Cancelar</button>
+                    <button type="submit" class="btn-success">Agregar Producto</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="saleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('sale')">&times;</span>
+            <h3>Registrar Venta</h3>
+            <form id="saleForm">
+                <div class="form-group">
+                    <label>Producto:</label>
+                    <select id="saleProduct" required>
+                        <option value="">Seleccionar producto...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="saleQuantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de Factura:</label>
+                    <input type="text" id="saleInvoice">
+                </div>
+                <div class="form-group">
+                    <label>Fecha:</label>
+                    <input type="date" id="saleDate" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeModal('sale')">Cancelar</button>
+                    <button type="submit" class="btn-danger">Registrar Venta</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('entry')">&times;</span>
+            <h3>Registrar Entrada</h3>
+            <form id="entryForm">
+                <div class="form-group">
+                    <label>Producto:</label>
+                    <select id="entryProduct" required>
+                        <option value="">Seleccionar producto...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad:</label>
+                    <input type="number" id="entryQuantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Número de Factura:</label>
+                    <input type="text" id="entryInvoice">
+                </div>
+                <div class="form-group">
+                    <label>Fecha:</label>
+                    <input type="date" id="entryDate" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" onclick="closeModal('entry')">Cancelar</button>
+                    <button type="submit" class="btn-success">Registrar Entrada</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let inventory = {};
+        const STORAGE_KEY = 'inventario_portable_v2';
+
+        // Auto-guardado cada 30 segundos
+        setInterval(saveToStorage, 30000);
+
+        // Cargar datos al iniciar
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    inventory = JSON.parse(saved);
+                    updateLastSavedTime();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Error cargando datos:', error);
+            }
+            return false;
+        }
+
+        // Guardar datos automáticamente
+        function saveToStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(inventory));
+                updateLastSavedTime();
+                showSaveStatus('💾 Guardado automático', 'success');
+            } catch (error) {
+                console.error('Error guardando datos:', error);
+                showSaveStatus('❌ Error al guardar', 'error');
+            }
+        }
+
+        // Actualizar indicador de última vez guardado
+        function updateLastSavedTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastSaved').textContent = `- Último guardado: ${timeString}`;
+        }
+
+        // Mostrar estado de guardado
+        function showSaveStatus(message, type) {
+            const statusEl = document.getElementById('saveStatus');
+            statusEl.textContent = message;
+            statusEl.className = type === 'success' ? 'auto-save-indicator' : 'offline-indicator';
+        }
+
+        // Exportar datos completos
+        function exportCompleteData() {
+            const exportData = {
+                version: '2.0',
+                exportDate: new Date().toISOString(),
+                inventory: inventory,
+                summary: calculateSummary()
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `inventario_completo_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            showSaveStatus('📤 Datos exportados', 'success');
+        }
+
+        // Importar datos
+        function importData(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Verificar si es un archivo válido
+                    if (data.inventory) {
+                        inventory = data.inventory;
+                    } else {
+                        // Formato antiguo
+                        inventory = data;
+                    }
+
+                    saveToStorage();
+                    updateTable();
+                    updateSummary();
+                    updateProductSelectors();
+                    
+                    alert('✅ Datos importados exitosamente');
+                    showSaveStatus('📥 Datos importados', 'success');
+                } catch (error) {
+                    alert('❌ Error al importar datos. Verifica que el archivo sea válido.');
+                    console.error('Error:', error);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Limpiar input
+            input.value = '';
+        }
+
+        // Limpiar todos los datos
+        function clearAllData() {
+            if (confirm('⚠️ ¿Estás seguro de eliminar TODOS los datos?\n\nEsta acción no se puede deshacer.')) {
+                if (confirm('🔒 Confirmación final: Se perderán todos los productos y movimientos.')) {
+                    inventory = {};
+                    localStorage.removeItem(STORAGE_KEY);
+                    updateTable();
+                    updateSummary();
+                    updateProductSelectors();
+                    showSaveStatus('🗑️ Datos eliminados', 'error');
+                    alert('✅ Todos los datos han sido eliminados.');
+                }
+            }
+        }
+
+        // Calcular resumen
+        function calculateSummary() {
+            const totalProducts = Object.keys(inventory).length;
+            let totalInventoryValue = 0;
+            let totalProfit = 0;
+            let lowStock = 0;
+
+            Object.values(inventory).forEach(product => {
+                const currentStock = product.initialStock + product.entries - product.sales;
+                totalInventoryValue += currentStock * product.basePrice;
+                totalProfit += (product.salePrice - product.basePrice) * product.sales;
+                if (currentStock <= 5) lowStock++;
+            });
+
+            return { totalProducts, totalInventoryValue, totalProfit, lowStock };
+        }
+
+        // Inicializar sistema
+        function initializeSystem() {
+            // Cargar datos guardados
+            if (!loadFromStorage()) {
+                // Si no hay datos guardados, usar datos de ejemplo
+                const sampleData = {
+                    'AN001': {
+                        code: 'AN001',
+                        description: 'Anillo Oro plata',
+                        initialStock: 10,
+                        entries: 5,
+                        sales: 3,
+                        basePrice: 25.00,
+                        salePrice: 45.00,
+                        lastSale: { quantity: 1, date: '2024-01-15', invoice: 'F001' },
+                        lastEntry: { quantity: 5, date: '2024-01-10', invoice: 'C001' }
+                    }
+                };
+                inventory = sampleData;
+                saveToStorage();
+            }
+
+            updateTable();
+            updateSummary();
+            updateProductSelectors();
+            
+            // Establecer fecha actual por defecto
+            document.getElementById('saleDate').valueAsDate = new Date();
+            document.getElementById('entryDate').valueAsDate = new Date();
+
+            showSaveStatus('✅ Sistema iniciado', 'success');
+        }
+
+        // [Resto de funciones igual que antes...]
+        function updateTable() {
+            const tbody = document.getElementById('inventoryBody');
+            tbody.innerHTML = '';
+
+            Object.values(inventory).forEach(product => {
+                const currentStock = product.initialStock + product.entries - product.sales;
+                const unitProfit = product.salePrice - product.basePrice;
+                const totalProfit = unitProfit * product.sales;
+                
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${product.code}</td>
+                    <td>${product.description}</td>
+                    <td>${product.initialStock}</td>
+                    <td>${product.entries}</td>
+                    <td>${product.sales}</td>
+                    <td style="font-weight: bold; ${currentStock <= 5 ? 'color: #e74c3c;' : ''}">${currentStock}</td>
+                    <td>$${product.basePrice.toFixed(2)}</td>
+                    <td>$${product.salePrice.toFixed(2)}</td>
+                    <td class="${unitProfit >= 0 ? 'profit-positive' : 'profit-negative'}">$${unitProfit.toFixed(2)}</td>
+                    <td class="${totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}">$${totalProfit.toFixed(2)}</td>
+                    <td>${product.lastSale.quantity || '-'}</td>
+                    <td>${product.lastSale.date || '-'}</td>
+                    <td>${product.lastSale.invoice || '-'}</td>
+                    <td>${product.lastEntry.quantity || '-'}</td>
+                    <td>${product.lastEntry.date || '-'}</td>
+                    <td>${product.lastEntry.invoice || '-'}</td>
+                    <td><button class="delete-btn" onclick="deleteProduct('${product.code}')">Eliminar</button></td>
+                `;
+            });
+        }
+
+        function updateSummary() {
+            const summary = calculateSummary();
+            document.getElementById('totalProducts').textContent = summary.totalProducts;
+            document.getElementById('totalInventoryValue').textContent = `$${summary.totalInventoryValue.toFixed(2)}`;
+            document.getElementById('totalProfit').textContent = `$${summary.totalProfit.toFixed(2)}`;
+            document.getElementById('lowStock').textContent = summary.lowStock;
+        }
+
+        function updateProductSelectors() {
+            const saleSelect = document.getElementById('saleProduct');
+            const entrySelect = document.getElementById('entryProduct');
+            
+            saleSelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+            entrySelect.innerHTML = '<option value="">Seleccionar producto...</option>';
+
+            Object.values(inventory).forEach(product => {
+                saleSelect.innerHTML += `<option value="${product.code}">${product.code} - ${product.description}</option>`;
+                entrySelect.innerHTML += `<option value="${product.code}">${product.code} - ${product.description}</option>`;
+            });
+        }
+
+        function openModal(type) {
+            document.getElementById(type + 'Modal').style.display = 'block';
+        }
+
+        function closeModal(type) {
+            document.getElementById(type + 'Modal').style.display = 'none';
+            document.getElementById(type + 'Form').reset();
+        }
+
+        // Event Listeners
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const code = document.getElementById('productCode').value;
+            const description = document.getElementById('productDescription').value;
+            const initialStock = parseInt(document.getElementById('initialStock').value);
+            const basePrice = parseFloat(document.getElementById('basePrice').value);
+            const salePrice = parseFloat(document.getElementById('salePrice').value);
+
+            if (inventory[code]) {
+                alert('El código de producto ya existe');
+                return;
+            }
+
+            inventory[code] = {
+                code: code,
+                description: description,
+                initialStock: initialStock,
+                entries: 0,
+                sales: 0,
+                basePrice: basePrice,
+                salePrice: salePrice,
+                lastSale: { quantity: 0, date: '', invoice: '' },
+                lastEntry: { quantity: 0, date: '', invoice: '' }
+            };
+
+            saveToStorage();
+            updateTable();
+            updateSummary();
+            updateProductSelectors();
+            closeModal('product');
+            alert('Producto agregado exitosamente');
+            showSaveStatus('➕ Producto agregado', 'success');
+        });
+
+        document.getElementById('saleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const productCode = document.getElementById('saleProduct').value;
+            const quantity = parseInt(document.getElementById('saleQuantity').value);
+            const invoice = document.getElementById('saleInvoice').value;
+            const date = document.getElementById('saleDate').value;
+
+            if (!inventory[productCode]) {
+                alert('Producto no encontrado');
+                return;
+            }
+
+            const currentStock = inventory[productCode].initialStock + inventory[productCode].entries - inventory[productCode].sales;
+            if (quantity > currentStock) {
+                alert('No hay suficiente stock disponible');
+                return;
+            }
+
+            inventory[productCode].sales += quantity;
+            inventory[productCode].lastSale = { quantity: quantity, date: date, invoice: invoice };
+
+            saveToStorage();
+            updateTable();
+            updateSummary();
+            closeModal('sale');
+            alert('Venta registrada exitosamente');
+            showSaveStatus('🛒 Venta registrada', 'success');
+        });
+
+        document.getElementById('entryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const productCode = document.getElementById('entryProduct').value;
+            const quantity = parseInt(document.getElementById('entryQuantity').value);
+            const invoice = document.getElementById('entryInvoice').value;
+            const date = document.getElementById('entryDate').value;
+
+            if (!inventory[productCode]) {
+                alert('Producto no encontrado');
+                return;
+            }
+
+            inventory[productCode].entries += quantity;
+            inventory[productCode].lastEntry = { quantity: quantity, date: date, invoice: invoice };
+
+            saveToStorage();
+            updateTable();
+            updateSummary();
+            closeModal('entry');
+            alert('Entrada registrada exitosamente');
+            showSaveStatus('📦 Entrada registrada', 'success');
+        });
+
+        function deleteProduct(code) {
+            if (confirm(`¿Está seguro de eliminar el producto ${code}?`)) {
+                delete inventory[code];
+                saveToStorage();
+                updateTable();
+                updateSummary();
+                updateProductSelectors();
+                showSaveStatus('🗑️ Producto eliminado', 'success');
+            }
+        }
+
+        function filterProducts() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const tbody = document.getElementById('inventoryBody');
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let row of rows) {
+                const code = row.cells[0].textContent.toLowerCase();
+                const description = row.cells[1].textContent.toLowerCase();
+                
+                if (code.includes(searchTerm) || description.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            }
+        }
+
+        // Función PDF simplificada (sin dependencias externas)
+        function exportToPDF() {
+            // Crear una ventana de impresión con formato
+            const printWindow = window.open('', '_blank');
+            const summary = calculateSummary();
+            
+            const htmlContent = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Reporte de Inventario</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .summary { background-color: #f0f0f0; padding: 15px; margin-bottom: 20px; }
+                        table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                        th, td { border: 1px solid #ddd; padding: 5px; text-align: center; }
+                        th { background-color: #34495e; color: white; }
+                        .profit-positive { color: green; font-weight: bold; }
+                        .profit-negative { color: red; font-weight: bold; }
+                        .low-stock { color: red; font-weight: bold; }
+                        @media print {
+                            .no-print { display: none; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>REPORTE DE INVENTARIO</h1>
+                        <h3>CON CONTROL DE GANANCIAS</h3>
+                        <p>Fecha: ${new Date().toLocaleDateString('es-ES')}</p>
+                    </div>
+                    
+                    <div class="summary">
+                        <h3>RESUMEN EJECUTIVO</h3>
+                        <p><strong>Total de Productos:</strong> ${summary.totalProducts}</p>
+                        <p><strong>Valor Total del Inventario:</strong> ${summary.totalInventoryValue.toFixed(2)}</p>
+                        <p><strong>Ganancia Total Acumulada:</strong> ${summary.totalProfit.toFixed(2)}</p>
+                        <p><strong>Productos con Bajo Stock (≤5):</strong> ${summary.lowStock}</p>
+                    </div>
+                    
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Stock Inicial</th>
+                                <th>Entradas</th>
+                                <th>Salidas</th>
+                                <th>Stock Actual</th>
+                                <th>Precio Base</th>
+                                <th>Precio Venta</th>
+                                <th>Ganancia Unit.</th>
+                                <th>Ganancia Total</th>
+                                <th>Última Venta</th>
+                                <th>Última Entrada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${Object.values(inventory).map(product => {
+                                const currentStock = product.initialStock + product.entries - product.sales;
+                                const unitProfit = product.salePrice - product.basePrice;
+                                const totalProfit = unitProfit * product.sales;
+                                
+                                return `
+                                    <tr>
+                                        <td>${product.code}</td>
+                                        <td>${product.description}</td>
+                                        <td>${product.initialStock}</td>
+                                        <td>${product.entries}</td>
+                                        <td>${product.sales}</td>
+                                        <td class="${currentStock <= 5 ? 'low-stock' : ''}">${currentStock}</td>
+                                        <td>${product.basePrice.toFixed(2)}</td>
+                                        <td>${product.salePrice.toFixed(2)}</td>
+                                        <td class="${unitProfit >= 0 ? 'profit-positive' : 'profit-negative'}">${unitProfit.toFixed(2)}</td>
+                                        <td class="${totalProfit >= 0 ? 'profit-positive' : 'profit-negative'}">${totalProfit.toFixed(2)}</td>
+                                        <td>${product.lastSale.quantity ? `${product.lastSale.quantity}/${product.lastSale.date}` : '-'}</td>
+                                        <td>${product.lastEntry.quantity ? `${product.lastEntry.quantity}/${product.lastEntry.date}` : '-'}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                    
+                    <div class="no-print" style="margin-top: 20px; text-align: center;">
+                        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">🖨️ Imprimir / Guardar como PDF</button>
+                        <button onclick="window.close()" style="padding: 10px 20px; font-size: 16px; background-color: #95a5a6; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">❌ Cerrar</button>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
+            showSaveStatus('📄 PDF generado', 'success');
+        }
+
+        // Cerrar modales al hacer clic fuera de ellos
+        window.onclick = function(event) {
+            const modals = document.getElementsByClassName('modal');
+            for (let modal of modals) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            }
+        }
+
+        // Detectar cambios de visibilidad para auto-guardar
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden') {
+                saveToStorage();
+            }
+        });
+
+        // Guardar antes de cerrar la página
+        window.addEventListener('beforeunload', function() {
+            saveToStorage();
+        });
+
+        // Inicializar el sistema al cargar la página
+        initializeSystem();
+    </script>
+</body>
+</html>
